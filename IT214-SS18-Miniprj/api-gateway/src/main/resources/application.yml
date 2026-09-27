@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        # Identity Service
+        - id: identity-auth
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/**
+        - id: identity-admin
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/admin/**
+
+        # Customer Service
+        - id: customer-mgmt
+          uri: lb://customer-service
+          predicates:
+            - Path=/api/v1/customers/**
+        - id: staff-mgmt
+          uri: lb://customer-service
+          predicates:
+            - Path=/api/v1/staffs/**
+
+        # Account Service
+        - id: account-mgmt
+          uri: lb://account-service
+          predicates:
+            - Path=/api/v1/accounts/**
+        - id: account-type-mgmt
+          uri: lb://account-service
+          predicates:
+            - Path=/api/v1/account-types/**
+
+        # Transaction Service
+        - id: transfer-mgmt
+          uri: lb://transaction-service
+          predicates:
+            - Path=/api/v1/transfers/**
+        - id: transaction-history
+          uri: lb://transaction-service
+          predicates:
+            - Path=/api/v1/transactions/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+jwt:
+  secret: RikkeiBankSecretKeyForJwtTokenGenerationAndValidationMustBeAtLeast256BitsLong!

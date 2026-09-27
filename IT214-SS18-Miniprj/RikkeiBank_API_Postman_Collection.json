@@ -1,0 +1,577 @@
+{
+  "info": {
+    "_postman_id": "c1f7871b-2529-4501-8b2b-422201b17b20",
+    "name": "RikkeiBank API - Microservices Collection",
+    "description": "Postman Collection hoàn chỉnh cho dự án Ngân hàng số RikkeiBank API (Microservices Architecture). Bao gồm đầy đủ các kịch bản kiểm thử: Đăng ký/Đăng nhập, Quản lý danh mục, Truy vấn Cache-Aside Redis, Chuyển khoản phân tán Saga Happy Path, Kịch bản Rollback bù trừ, Bắn sự kiện Kafka Notification, Circuit Breaker và Ép buộc đăng xuất (Force Logout).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "teller_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer1_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer2_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Authentication & Security (Identity Service)",
+      "item": [
+        {
+          "name": "1.1 Login as ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.accessToken) {",
+                  "    pm.collectionVariables.set('admin_token', jsonData.accessToken);",
+                  "    console.log('Saved admin_token:', jsonData.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "1.2 Login as TELLER",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.accessToken) {",
+                  "    pm.collectionVariables.set('teller_token', jsonData.accessToken);",
+                  "    console.log('Saved teller_token');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"teller1\",\n  \"password\": \"teller123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Login as CUSTOMER 1 (CIF001)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.accessToken) {",
+                  "    pm.collectionVariables.set('customer1_token', jsonData.accessToken);",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.refreshToken);",
+                  "    console.log('Saved customer1_token & refresh_token');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"customer1\",\n  \"password\": \"cust123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "1.4 Login as CUSTOMER 2 (CIF002)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.accessToken) {",
+                  "    pm.collectionVariables.set('customer2_token', jsonData.accessToken);",
+                  "    console.log('Saved customer2_token');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"customer2\",\n  \"password\": \"cust123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "1.5 Refresh Token (Seamless Session)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "1.6 Admin Force Logout User (Thu hồi quyền tức thì)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/customer2/force-logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users", "customer2", "force-logout"]
+            }
+          }
+        },
+        {
+          "name": "1.7 Verify Force Logout (Customer 2 bị từ chối 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer2_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/1009876543",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "accounts", "1009876543"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Catalog Management (Customer Service)",
+      "item": [
+        {
+          "name": "2.1 Lấy danh sách Khách hàng",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "customers"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Xem chi tiết Khách hàng CIF001",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teller_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/CIF001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "customers", "CIF001"]
+            }
+          }
+        },
+        {
+          "name": "2.3 Thêm mới Khách hàng",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerCif\": \"CIF003\",\n  \"fullName\": \"Vũ Hoàng Nam\",\n  \"identityCard\": \"001200000003\",\n  \"phone\": \"0988776655\",\n  \"email\": \"nam.vu@gmail.com\",\n  \"address\": \"789 Giải Phóng, Hai Bà Trưng, Hà Nội\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "customers"]
+            }
+          }
+        },
+        {
+          "name": "2.4 Lấy danh sách Nhân viên (Staff)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/staffs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "staffs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Account & Cache-Aside (Account Service)",
+      "item": [
+        {
+          "name": "3.1 Xem danh mục Loại tài khoản (Redis Cache-Aside)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/account-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "account-types"]
+            }
+          }
+        },
+        {
+          "name": "3.2 Tra cứu thông tin & số dư tài khoản 1001234567 (Cached)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/1001234567",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "accounts", "1001234567"]
+            }
+          }
+        },
+        {
+          "name": "3.3 Tra cứu tài khoản 1009876543",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teller_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/1009876543",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "accounts", "1009876543"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Core Transfer & Saga Happy Path (Transaction Service)",
+      "item": [
+        {
+          "name": "4.1 Chuyển khoản thành công (Saga Happy Path)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer1_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromAccount\": \"1001234567\",\n  \"toAccount\": \"1009876543\",\n  \"amount\": 500000,\n  \"description\": \"Chuyen tien an trua (Saga Happy Path Test)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transfers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transfers"]
+            }
+          }
+        },
+        {
+          "name": "4.2 Kiểm tra số dư tk nguồn (Đã giảm 500,000 VND)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/1001234567",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "accounts", "1001234567"]
+            }
+          }
+        },
+        {
+          "name": "4.3 Kiểm tra số dư tk đích (Đã tăng 500,000 VND)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teller_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/1009876543",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "accounts", "1009876543"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Saga Rollback & Compensating Flow",
+      "item": [
+        {
+          "name": "5.1 Kích hoạt Chuyển khoản Lỗi & Rollback (X-Simulate-Error: true)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer1_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Simulate-Error",
+                "value": "true"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromAccount\": \"1001234567\",\n  \"toAccount\": \"1009876543\",\n  \"amount\": 2000000,\n  \"description\": \"Chuyen khoan test loi de xem Saga bu tru rollback\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transfers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transfers"]
+            }
+          }
+        },
+        {
+          "name": "5.2 Kiểm tra số dư tk nguồn (Khẳng định không bị du lệch tiền)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/1001234567",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "accounts", "1001234567"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Transactions & Teller Reporting",
+      "item": [
+        {
+          "name": "6.1 Giao dịch viên xem danh sách giao dịch trong ngày",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teller_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/daily",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transactions", "daily"]
+            }
+          }
+        },
+        {
+          "name": "6.2 Khách hàng xem lịch sử giao dịch cá nhân",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/my-history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transactions", "my-history"]
+            }
+          }
+        },
+        {
+          "name": "6.3 Quản trị viên xem toàn bộ lịch sử giao dịch hệ thống",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transactions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Asynchronous Notifications (Kafka Consumer)",
+      "item": [
+        {
+          "name": "7.1 Xem danh sách thông báo biến động số dư đã tiêu thụ từ Kafka",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customer1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8085/api/v1/notifications/recent",
+              "host": ["http://localhost:8085"],
+              "path": ["api", "v1", "notifications", "recent"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
